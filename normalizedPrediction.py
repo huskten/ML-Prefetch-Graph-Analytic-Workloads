@@ -84,38 +84,80 @@ Model.layers
 
 Model.compile(optimizer=tf.keras.optimizers.Adam(0.01), loss=tf.keras.losses.MeanSquaredError())
 
-Model.fit(A, b, epochs=5, verbose=1)
+Model.fit(A, b, epochs=1, verbose=1)
 
-PredictArr = []
+PredictSect = []
 
 Model.save('savedModels/normModel')
 
+
+PredictSect = []
+Set = []
+
 def createPredictData(array):
     with open('gimpedpinatracepredict.out') as File:
-        list = []
         for line in File:
             predictPos, predictType, predictValue = line.split(" ")
             predictValue = (int(predictValue, base=16))
-            list.append(predictValue)
+            Set.append(predictValue)
         global minPredict 
-        minPredict = min(list)
+        minPredict = min(Set)
         global maxPredict 
-        maxPredict = max(list)
-        for i in list:
+        maxPredict = max(Set)
+        for i in Set:
             finalPredict = (i - minPredict)/(maxPredict)
-            array.append(finalPredict)
+            if len(array) > 5:
+                array.pop(0)
+                break
+            if finalPredict > 0:
+                array.append(finalPredict)
         return array
+
+def iteratePredictData(array):
+    for i in Set:
+            finalPredict = (i - minPredict)/(maxPredict)
+            np.append(array, finalPredict)
+            if len(array) > 5:
+                array.pop(0)
+                Set.pop(0)
+                break
+    return array
             
-createPredictData(PredictArr)
+def nextPredict(array):
+    iteratePredictData(array)
 
-PredictArr = np.array(PredictArr)
+    array = np.array(array)
 
-PredictArr = PredictArr.reshape((1, n_steps, n_features))
+    array = array.reshape((1, n_steps, n_features))
 
-PredictArr
+    array
+
+    Predict = (Model.predict(array, verbose=1))
+    print(Predict)
+    print(int(((float(Predict))*(maxPredict) + minPredict)))
+    return
+
+            
+createPredictData(PredictSect)
+
+PredictSect = np.array(PredictSect)
+
+PredictSect = PredictSect.reshape((1, n_steps, n_features))
+
+PredictSect
+
+Predict = (Model.predict(PredictSect, verbose=1))
+print(Predict)
+print(int(((float(Predict))*(maxPredict) + minPredict)))
 
 
-Predict = (Model.predict(PredictArr, verbose=1))
+nextPredict(PredictSect)
+nextPredict(PredictSect)
+nextPredict(PredictSect)
+nextPredict(PredictSect)
+nextPredict(PredictSect)
+
+
 
 ############################################################
 # ATTEMPTS AT LOOPING PREDICTIONS
@@ -134,7 +176,7 @@ print("=====================================")
 
 
 print(float(Predict))
-formattedFinal = int(((float(Predict))*(maxPredict - minPredict) + minPredict))
+formattedFinal = int(((float(Predict))*(maxPredict) + minPredict))
 print(formattedFinal, 140724957118656)
 print(formattedFinal - 140724957118656)
 print(formattedFinal == 140724957118656)
