@@ -4,38 +4,34 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import os
 constantDivider = 1e7
+np.set_printoptions(floatmode = 'unique')
 
-Ncheckpoint = "Ncheckpoints/Ncheckpoint"
-checkpoint_dir = os.path.dirname(Ncheckpoint)
+# Ncheckpoint = "Ncheckpoints/Ncheckpoint"
+# checkpoint_dir = os.path.dirname(Ncheckpoint)
 
 
-# Create a callback that saves the model's weights
-Callback = tf.keras.callbacks.ModelCheckpoint(filepath=Ncheckpoint,
-                                                 save_weights_only=True,
-                                                 verbose=1)
+# # Create a callback that saves the model's weights
+# Callback = tf.keras.callbacks.ModelCheckpoint(filepath=Ncheckpoint,
+#                                                  save_weights_only=True,
+#                                                  verbose=1)
 
+#performance
+#model accuracy
+#prefetch accuracy
+#area takes
+#speed up
+#Sniper implementation
+#how long is too long
+#prediodic vs smart
 
 ########################################################################
 
-Data = []
+Model = tf.keras.models.load_model('savedModels/normModel')
 
-def createTrainData(array):
-    with open('gimpedpinatracemedium.out') as file:
-        list = []
-        for line in file:
-            pos, type, value = line.split(" ")
-            value = (int(value, base=16))
-            list.append(value)
-        minTrain = min(list)
-        maxTrain = max(list)
-        for i in list:
-            final = (i - minTrain)/(maxTrain)
-            array.append(final)
-            np.array(array)
-        return array
 
-createTrainData(Data)
-
+PredictData = []
+n_steps = 5
+n_features = 1
 
 def splitSequence(seq, n_steps):
     
@@ -66,118 +62,40 @@ def splitSequence(seq, n_steps):
     
     pass
 
-n_steps = 5
-
-A, b = splitSequence(Data, n_steps = 5)
-
-# reshape from [samples, timesteps] into [samples, timesteps, features]
-n_features = 1
-A = A.reshape((A.shape[0], A.shape[1], n_features))
-
-Model = tf.keras.Sequential()
-Model.add(layers.LSTM(256, activation='relu', input_shape=(n_steps, n_features)))
-Model.add(layers.Dense(1))
-
-Model.layers
-
-#Model.summary()
-
-Model.compile(optimizer=tf.keras.optimizers.Adam(0.01), loss=tf.keras.losses.MeanSquaredError())
-
-Model.fit(A, b, epochs=1, verbose=1)
-
-PredictSect = []
-
-Model.save('savedModels/normModel')
-
-
-PredictSect = []
-Set = []
-
 def createPredictData(array):
+    temp = []
     with open('gimpedpinatracepredict.out') as File:
         for line in File:
             predictPos, predictType, predictValue = line.split(" ")
             predictValue = (int(predictValue, base=16))
-            Set.append(predictValue)
+            temp.append(predictValue)
         global minPredict 
-        minPredict = min(Set)
+        minPredict = temp[50]
         global maxPredict 
-        maxPredict = max(Set)
-        for i in Set:
-            finalPredict = (i - minPredict)/(maxPredict)
-            if len(array) > 5:
-                array.pop(0)
-                break
-            if finalPredict > 0:
-                array.append(finalPredict)
+        maxPredict = max(temp)
+        for i in temp:
+            final = (i - minPredict)/(maxPredict - minPredict)
+            array.append(final)
         return array
 
 def iteratePredictData(array):
-    for i in Set:
-            finalPredict = (i - minPredict)/(maxPredict)
-            np.append(array, finalPredict)
-            if len(array) > 5:
-                array.pop(0)
-                Set.pop(0)
-                break
+    # for i in PredictData:
+    #         finalPredict = (i - minPredict)/(maxPredict)
+    #         np.append(array, finalPredict)
+    #         if len(array) > 5:
+    #             array.pop(0)
+    #             break
+    for i in range(len(array)):
+            # t = []
+            # np.array(t)
+            t = array[i:i+5]
+            t = np.array(t, dtype = np.longdouble)
+            t = t.reshape((1, n_steps, n_features))
+            prediction = float(Model.predict(t, verbose = 0))
+            print(prediction)
+            print((((prediction)*(maxPredict - minPredict)) + minPredict))
     return array
-            
-def nextPredict(array):
-    iteratePredictData(array)
 
-    array = np.array(array)
+createPredictData(PredictData)
 
-    array = array.reshape((1, n_steps, n_features))
-
-    array
-
-    Predict = (Model.predict(array, verbose=1))
-    print(Predict)
-    print(int(((float(Predict))*(maxPredict) + minPredict)))
-    return
-
-            
-createPredictData(PredictSect)
-
-PredictSect = np.array(PredictSect)
-
-PredictSect = PredictSect.reshape((1, n_steps, n_features))
-
-PredictSect
-
-Predict = (Model.predict(PredictSect, verbose=1))
-print(Predict)
-print(int(((float(Predict))*(maxPredict) + minPredict)))
-
-
-nextPredict(PredictSect)
-nextPredict(PredictSect)
-nextPredict(PredictSect)
-nextPredict(PredictSect)
-nextPredict(PredictSect)
-
-
-
-############################################################
-# ATTEMPTS AT LOOPING PREDICTIONS
-# def predictNext(array, amount):
-#     for i in range(amount):
-#         createPredictData(array.append(float(Predict)))
-#         Model.predict(PredictArr, verbose=1)
-#     return array
-
-# predictList = []
-
-# print(predictNext(predictList, 2))
-############################################################
-
-print("=====================================")
-
-
-print(float(Predict))
-formattedFinal = int(((float(Predict))*(maxPredict) + minPredict))
-print(formattedFinal, 140724957118656)
-print(formattedFinal - 140724957118656)
-print(formattedFinal == 140724957118656)
-
+print(iteratePredictData(PredictData))
