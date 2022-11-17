@@ -3,7 +3,7 @@ import numpy as np
 from tensorflow import keras
 from tensorflow.keras import layers
 import os
-constantDivider = 1e7
+from modellib import splitSequence, createTrainData
 
 Ncheckpoint = "Ncheckpoints/Ncheckpoint"
 checkpoint_dir = os.path.dirname(Ncheckpoint)
@@ -19,52 +19,8 @@ Callback = tf.keras.callbacks.ModelCheckpoint(filepath=Ncheckpoint,
 
 Data = []
 
-def createTrainData(array):
-    with open('gimpedpinatracemedium.out') as file:
-        list = []
-        for line in file:
-            pos, type, value = line.split(" ")
-            value = (int(value, base=16))
-            list.append(value)
-        minTrain = min(list)
-        maxTrain = max(list)
-        for i in list:
-            final = (i - minTrain)/(maxTrain)
-            array.append(final)
-            np.array(array)
-        return array
-
-createTrainData(Data)
-
-
-def splitSequence(seq, n_steps):
-    
-    #Declare X and y as empty list
-    X = []
-    y = []
-    Data
-    for i in range(len(seq)):
-        #get the last index
-        lastIndex = i + n_steps
-        
-        #if lastIndex is greater than length of sequence then break
-        if lastIndex > len(seq) - 1:
-            break
-            
-        #Create input and output sequence
-        seq_X, seq_y = seq[i:lastIndex], seq[lastIndex]
-        
-        #append seq_X, seq_y in X and y list
-        X.append(seq_X)
-        y.append(seq_y)        
-        pass    #Convert X and y into numpy array
-    X = np.array(X)
-    y = np.array(y)
-
-
-    return X,y 
-    
-    pass
+# createTrainData(Data, 'gimpedpinatracemedium.out')
+createTrainData(Data, 'traceheavy.out')
 
 n_steps = 5
 
@@ -88,4 +44,5 @@ Model.fit(A, b, epochs=200, verbose=1)
 
 PredictSect = []
 
-Model.save('savedModels/normModel')
+# Model.save('savedModels/normModel')
+Model.save('savedModels/normModel2')

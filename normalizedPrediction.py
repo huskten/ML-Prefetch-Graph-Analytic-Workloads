@@ -6,6 +6,9 @@ import os
 constantDivider = 1e7
 np.set_printoptions(floatmode = 'unique')
 
+from modellib import splitSequence, getBlock, isSameBlock
+
+
 # Ncheckpoint = "Ncheckpoints/Ncheckpoint"
 # checkpoint_dir = os.path.dirname(Ncheckpoint)
 
@@ -23,44 +26,31 @@ np.set_printoptions(floatmode = 'unique')
 #Sniper implementation
 #how long is too long
 #prediodic vs smart
+#iterate through predict input trace and compare block results
+#Ahmed will provide getblock function 
+
+
+
+#drug discovery
+#weather prediction
+#games to load faster
+#zoom in -> make either processor faster, memory, etc -> make processor faster by making prefetecher more efficient -> goal of hardware prefetcher is to bring data to processor in advance removes the delay -> prefetechers already exist sometimes -> we want a more effective prefetcher to fetch a broader range of data
+
+#performance matters -> specific sisues of prefetechers -> why prefetcher better
+#removal of the human mind automate the design process
+#use hardawre to do machine learning
+
+#set of addresses, check if next address exists
+#compare adress to the set of predictions, dont compare a prediction to the set of the actual addresses
 
 ########################################################################
 
 Model = tf.keras.models.load_model('savedModels/normModel')
 
-
 PredictData = []
 n_steps = 5
 n_features = 1
-
-def splitSequence(seq, n_steps):
-    
-    #Declare X and y as empty list
-    X = []
-    y = []
-    Data
-    for i in range(len(seq)):
-        #get the last index
-        lastIndex = i + n_steps
-        
-        #if lastIndex is greater than length of sequence then break
-        if lastIndex > len(seq) - 1:
-            break
-            
-        #Create input and output sequence
-        seq_X, seq_y = seq[i:lastIndex], seq[lastIndex]
-        
-        #append seq_X, seq_y in X and y list
-        X.append(seq_X)
-        y.append(seq_y)        
-        pass    #Convert X and y into numpy array
-    X = np.array(X)
-    y = np.array(y)
-
-
-    return X,y 
-    
-    pass
+blocks_predicted = set()
 
 def createPredictData(array):
     temp = []
@@ -69,8 +59,10 @@ def createPredictData(array):
             predictPos, predictType, predictValue = line.split(" ")
             predictValue = (int(predictValue, base=16))
             temp.append(predictValue)
+        # print(temp)
+        print(len(temp))
         global minPredict 
-        minPredict = temp[50]
+        minPredict = temp[20]
         global maxPredict 
         maxPredict = max(temp)
         for i in temp:
@@ -78,24 +70,49 @@ def createPredictData(array):
             array.append(final)
         return array
 
-def iteratePredictData(array):
-    # for i in PredictData:
-    #         finalPredict = (i - minPredict)/(maxPredict)
-    #         np.append(array, finalPredict)
-    #         if len(array) > 5:
-    #             array.pop(0)
-    #             break
+def iteratePredictData(array, blockset):
+    # temp = []
+    hit = 0
+    miss = 0
     for i in range(len(array)):
-            # t = []
-            # np.array(t)
             t = array[i:i+5]
+            if len(t) < 5: #temporary: change once we start predicting multiple sets of addresses and can change the amount of indices we take in
+                break
+            if i+6 > len(array)-1:
+                break
             t = np.array(t, dtype = np.longdouble)
             t = t.reshape((1, n_steps, n_features))
             prediction = float(Model.predict(t, verbose = 0))
-            print(prediction)
-            print((((prediction)*(maxPredict - minPredict)) + minPredict))
-    return array
+            fprediction = int((((prediction)*(maxPredict - minPredict)) + minPredict))
+            t2 = int((((array[i+6])*(maxPredict - minPredict)) + minPredict))
+            print(fprediction)
+            blocks_predicted.add(getBlock(fprediction))
+            if getBlock(t2) in blockset:
+                hit += 1
+                print("hit")
+            else:
+                miss += 1
+                print(("miss"))
+            # temp.append(int(fprediction))
+            # print(temp)
+    print("Hit Count: %d" % hit)
+    print("Miss Count: %d" % miss)
+    hitRate = (int(hit) / (int(miss)+int(hit)))*100
+    print("Hit Rate:", hitRate)
+    return array, blockset
 
 createPredictData(PredictData)
 
-print(iteratePredictData(PredictData))
+iteratePredictData(PredictData, blocks_predicted)
+
+print(blocks_predicted)
+
+# for i in blocks_predicted:
+#     return isSameBlock(i, )
+
+# def testBlock(set):
+#     with open('gimpedpinatracepredict.out') as File:
+#             for line in File:
+#                 predictPos, predictType, predictValue = line.split(" ")
+#                 predictValue = (int(predictValue, base=16))
+#                 isSameBlock(predictValue, )
