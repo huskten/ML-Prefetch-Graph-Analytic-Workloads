@@ -31,7 +31,8 @@ n_features = 1
 A = A.reshape((A.shape[0], A.shape[1], n_features))
 
 Model = tf.keras.Sequential()
-Model.add(layers.LSTM(256, activation='relu', input_shape=(n_steps, n_features)))
+Model.add(tf.keras.layers.Embedding(5, 1, input_length=1, embeddings_regularizer='l1'))
+Model.add(layers.LSTM(1, activation='relu', input_shape=(n_steps, n_features)))
 Model.add(layers.Dense(1))
 
 Model.layers
@@ -45,4 +46,6 @@ Model.fit(A, b, epochs=200, verbose=1)
 PredictSect = []
 
 # Model.save('savedModels/normModel')
-Model.save('savedModels/normModel2')
+# Model.save('savedModels/normModel2')
+# Model.save('savedModels/normModel3') #removed outliers
+Model.save('savedModels/normModelEmbedLayerTest1')

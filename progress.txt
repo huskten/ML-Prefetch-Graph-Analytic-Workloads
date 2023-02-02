@@ -1,0 +1,78 @@
+11/17
+Starting to note my progress
+
+Finished first official benchmarks on set of prediction data.
+
+Compared prediction to a list of addresses, compared prediction adress to the next actual adress
+
+
+//////////////NormModel/////////////////
+Hit Count: 28
+Miss Count: 69
+Hit Rate: 28.865979381443296
+///////////////////////////////
+
+Since the hit rate seemed relatiely low, I trained on a larger set of data, NormModel2.
+The following data is listed as the following:
+
+//////////NormModel2///////////
+Hit Count: 25
+Miss Count: 72
+Hit Rate: 25.773195876288657
+///////////////////////////////
+
+Data ^^ is null since we only comapred the prediction to every possible actual address
+instead of comparing the NEXT actual address to predictions that have been prefetched
+
+This disproves the concept that more data == better model. 
+Could be a case of overtraining.
+
+
+New Data: Compare actual address [i+6] to prediction set
+
+//////////NormModel////////////
+Hit Count: 17
+Miss Count: 78
+Hit Rate: 17.894736842105264
+///////////////////////////////
+
+Lower than expected
+
+//////////NormModel2///////////
+Hit Count: 40
+Miss Count: 55
+Hit Rate: 42.10526315789473
+///////////////////////////////
+
+A lot higher than expected
+
+Above claim in line 27 is wrong. The more thoroughly trained model made a difference of ~25%
+
+hw:
+    try to find what happens when there is a huge range in LSTMs
+    Have something that discards outliers within a set of data (min, max), average, etc
+      find middle point of min and max and average of data
+
+
+1/31
+Starting again after winter break
+
+Page and Offset model application
+ 
+page ex. 0xBEEF >> 12 -> 0xB 
+offset ex. (0xBEEF) & (0xFFFFFFFFFFFFFFFF) -> 0xEEF
+
+Each address is 32 bytes
+
+//// pause on page and offset models
+//// Start on embedding layer of model based on voyager paper
+voyager github repo has a embed layer already made, hack some code and get it in
+***get the embed layer done by the end of the month
+
+2/1
+Attempts at integrating embed layer into trainModel and use within main prediction function
+Error 1: Output of the prediction was >1 array instead of one ouput, likely due to embedding turning single values into vector addresses, moved embed layer to before the LSTM
+Error 2: Graph execution error
+
+
+
