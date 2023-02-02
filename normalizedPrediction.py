@@ -54,7 +54,7 @@ blocks_predicted = set()
 
 def createPredictData(array):
     temp = []
-    with open('gimpedpinatracepredict.out') as File:
+    with open('pinatracepredict.out') as File:
         for line in File:
             predictPos, predictType, predictValue = line.split(" ")
             predictValue = (int(predictValue, base=16))

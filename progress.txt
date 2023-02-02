@@ -72,7 +72,9 @@ voyager github repo has a embed layer already made, hack some code and get it in
 2/1
 Attempts at integrating embed layer into trainModel and use within main prediction function
 Error 1: Output of the prediction was >1 array instead of one ouput, likely due to embedding turning single values into vector addresses, moved embed layer to before the LSTM
-Error 2: Graph execution error
+Error 2: Graph execution error, fixed by changing input dim and output dim to 1
+
+Retrain at ncsu
 
 
 
