@@ -45,7 +45,7 @@ from modellib import splitSequence, getBlock, isSameBlock
 
 ########################################################################
 
-Model = tf.keras.models.load_model('savedModels/normModel')
+Model = tf.keras.models.load_model('savedModels/normModelEmbedLayerTest1')
 
 PredictData = []
 n_steps = 5

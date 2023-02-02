@@ -31,8 +31,8 @@ n_features = 1
 A = A.reshape((A.shape[0], A.shape[1], n_features))
 
 Model = tf.keras.Sequential()
-Model.add(tf.keras.layers.Embedding(1, 1, input_length=1, embeddings_regularizer='l1'))
-Model.add(layers.LSTM(256, activation='relu', input_shape=(n_steps, n_features)))
+Model.add(tf.keras.layers.Embedding(1000, 1, input_length=5, embeddings_regularizer='l1'))
+Model.add(layers.LSTM(256, activation='relu',dropout=0.2, input_shape=(n_steps, n_features)))
 Model.add(layers.Dense(1))
 
 Model.layers

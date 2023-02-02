@@ -72,9 +72,25 @@ voyager github repo has a embed layer already made, hack some code and get it in
 2/1
 Attempts at integrating embed layer into trainModel and use within main prediction function
 Error 1: Output of the prediction was >1 array instead of one ouput, likely due to embedding turning single values into vector addresses, moved embed layer to before the LSTM
-Error 2: Graph execution error, fixed by changing input dim and output dim to 1
+Error 2: Graph execution error
 
-Retrain at ncsu
+
+
+2nd Semester Timeline:
+
+Implement embed layer 2/9
+Implement loss into lstm 2/11
+Create offset, page, and pc LSTM 2/16
+
+# TBD
+Train on a larger set of addresses 2/##
+Implement prefetcher model into the SNIPER Simulator 1/26
+Experiment with training delays 2/2
+Create smart training neural network 2/9
+Implement smart training neural network into SNIPER Simulator 2/16
+Finish a fully integrated neural network prefetcher into SNIPER Simulator 3/1
+Make small improvements in the code and hyper tune the neural networks 3/1 - 4/30
+
 
 
 
