@@ -31,7 +31,7 @@ n_features = 1
 A = A.reshape((A.shape[0], A.shape[1], n_features))
 
 Model = tf.keras.Sequential()
-Model.add(tf.keras.layers.Embedding(1000, 1, input_length=5, embeddings_regularizer='l1'))
+Model.add(tf.keras.layers.Embedding(6, 1, input_length=5, embeddings_regularizer='l1'))
 Model.add(layers.LSTM(256, activation='relu',dropout=0.2, input_shape=(n_steps, n_features)))
 Model.add(layers.Dense(1))
 
@@ -41,7 +41,7 @@ Model.layers
 
 Model.compile(optimizer=tf.keras.optimizers.Adam(0.01), loss=tf.keras.losses.MeanSquaredError())
 
-Model.fit(A, b, epochs=200, verbose=1)
+Model.fit(A, b, epochs=1, verbose=1)
 
 PredictSect = []
 
