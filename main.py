@@ -344,14 +344,14 @@ def run_prefetcher(args):
 
             #addresses = []
             for p,o in zip(page,offset):
-                tmp = (p<<12) + (o<<6) #actual prediction
+                tmp = ((p<<12) + (o<<6))>>6 #actual prediction
                 # print(p)
                 # print(o)
-                print(tmp)
-                print(addr)
+                # print("tmp:",tmp, " ", "addr",addr, "diff:", tmp - addr)
                 # exit()
                 # addresses.append(tmp)
                 # replace if not in cache.abs
+                # replaced prefetched with crude cache system
                 time += 1
                 if tmp in cache:
                     ind = cache.index(tmp)
