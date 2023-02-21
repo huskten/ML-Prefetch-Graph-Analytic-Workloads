@@ -336,6 +336,9 @@ def run_prefetcher(args):
             offset = [i for i in res2[0]]
 
             
+            """
+            Added cache system 2/21
+            """
             # if addr>>6 not in prefetched:
             if addr>>6 not in cache:
                 miss += 1
@@ -379,25 +382,6 @@ def run_prefetcher(args):
             # pass addresses to the prefetcher
             # check if current addr hits on a prefetch
     return
-
-"""
-Added 2/21 Crude Cache
-"""
-
-def load_address_from_file(inputfilename):
-    with open(inputfilename) as file:
-        for line in file:
-            pos, block = line.split(',')
-            block = (int(block, base=16))
-            time = time + 1
-            if None not in cache:
-                min_ind = LRU_counter.index(min(LRU_counter))
-                cache[min_ind] = block
-                LRU_counter[min_ind] = time
-                # print(min_ind)
-            else:
-                cache[cache.index(None)] = block
-
 
 
 
