@@ -23,18 +23,53 @@ num_labels = 2
 
 multilabel = True
 
+
+
 """
 Added 2/21 Crude predict_cache
 """
-# predict_cache_size = int(sys.argv[4], 16)
-cache_size = 100
-predict_cache = [None]*cache_size
-predict_LRU = [0]*cache_size
+# # predict_cache_size = int(sys.argv[4], 16)
+# cache_size = 100
+# predict_cache = [None]*cache_size
+# predict_LRU = [0]*cache_size
 
-cache_size = 100
-access_cache = [None]*cache_size
-access_LRU = [0]*cache_size
+# cache_size = 100
+# access_cache = [None]*cache_size
+# access_LRU = [0]*cache_size
 
+"""
+Added 2/23 Cache Class
+"""
+
+class Cache:
+    def __init__(self, cache_size):
+        self.cache_size = cache_size
+        self.cache = [None]*cache_size
+        self.LRU_Counter = [0]*cache_size
+        self.time = 0
+        self.hit = 0
+        self.miss = 0
+
+    def access(self, key):
+        key>>6
+        self.time +=  1
+        if key in self.cache:
+            ind = self.cache.index(key)
+            self.LRU_Counter[ind] = self.time
+            self.hit += 1
+            
+        else:
+            self.miss += 1
+            if None not in self.cache:
+                min_ind = self.LRU_Counter.index(min(self.LRU_Counter))
+                self.cache[min_ind] = key
+                self.LRU_Counter[min_ind] = self.time
+                
+                # print(min_ind)
+            else:
+                self.cache[self.cache.index(None)] = key
+                ind = self.cache.index(key)
+                self.LRU_Counter[ind] = self.time
 
 class batch_gen(object):
     def __init__(self, pc_in, page_in, offset_in, page_out, offset_out, batch_size, pc_localization, epoch):
@@ -303,15 +338,11 @@ def run_prefetcher(args):
     inv_unique_pcs = {v: k for k, v in unique_pcs.items()}
     inv_unique_pages = {v: k for k, v in unique_pages.items()}
 
-    # prefetched = {}
-    hit = 0
-    miss = 0
-    time = 0
-
     print('Running prefetcher...')
+    predict_cache = Cache(100)
+    access_cache = Cache(100)
     with open(args.benchmark) as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
-        time = time + 1
         for row in readCSV:
             # row = row[0].split(',')
             pc, page, offset = int(row[0], 16), int(row[1], 16)>>12, (int(row[1], 16)>>6)&0x3f
@@ -339,73 +370,36 @@ def run_prefetcher(args):
             res2 = np.argmax(y[1], axis=2)
             offset = [i for i in res2[0]]
 
-            
-            """
-            Added predict_cache & access_cache system 2/21
-            """
-            # if addr>>6 not in prefetched:
-            if addr>>6 not in predict_cache:
-                miss += 1
-            else:
-                hit += 1
 
-            
-
-            #addresses = []
             for p,o in zip(page,offset):
-                tmp = ((p<<12) + (o<<6))>>6 #actual prediction
-                # print(p)
-                # print(o)
-                # print("tmp:",tmp, " ", "addr",addr, "diff:", tmp - addr)
-                # exit()
-                # addresses.append(tmp)
-                # replace if not in predict_cache.abs
-                # replaced prefetched with crude predict_cache system
-                time += 1
-                if tmp in predict_cache:
-                    ind = predict_cache.index(tmp)
-                    predict_LRU[ind] = time
-                else:
-                    if None not in predict_cache:
-                        min_ind = predict_LRU.index(min(predict_LRU))
-                        predict_cache[min_ind] = tmp
-                        predict_LRU[min_ind] = time
-                        # print(min_ind)
-                    else:
-                        predict_cache[predict_cache.index(None)] = tmp
+                tmp = ((p<<12) + (o<<6)) #actual prediction
 
-                if addr>>6 in access_cache:
-                    ind = access_cache.index(addr>>6)
-                    access_LRU[ind] = time
-                else:
-                    if None not in access_cache:
-                        min_ind = access_LRU.index(min(access_LRU))
-                        access_cache[min_ind] = addr>>6
-                        access_LRU[min_ind] = time
-                        # print(min_ind)
-                    else:
-                        access_cache[access_cache.index(None)] = addr
+                predict_cache.access(tmp)
+
+                access_cache.access(addr)
                 
 
-            if (hit+miss) % 100 == 0:
-                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(hit, miss, 100*hit/(hit+miss)))
+            if (predict_cache.hit+predict_cache.miss) % 100 == 0:
+                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(predict_cache.hit, predict_cache.miss, 100*predict_cache.hit/(predict_cache.hit+predict_cache.miss)))
+                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)))                
                 # print(predict_LRU)
                 # print(predict_cache)
                 # print(access_LRU)
                 # print(access_cache)
                 with open("predict_output.txt", "a") as f:
-                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(hit, miss, 100*hit/(hit+miss)), file = f)
-                    print("predict_LRU: ", predict_LRU, file = f)
-                    print("predict_cache: ", predict_cache, file = f)
+                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(predict_cache.hit, predict_cache.miss, 100*predict_cache.hit/(predict_cache.hit+predict_cache.miss)), file = f)
+                    print("predict_LRU: ", predict_cache.LRU_Counter, file = f)
+                    print("predict_cache: ", predict_cache.cache, file = f)
                 with open("access_output.txt", "a") as f1:
-                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(hit, miss, 100*hit/(hit+miss)), file = f1)
-                    print("access_LRU: ", access_LRU, file = f1)
-                    print("access_cache: ", access_cache, file = f1)
+                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)), file = f1)
+                    print("access_LRU: ", access_cache.LRU_Counter, file = f1)
+                    print("access_cache: ", access_cache.cache, file = f1)
 
             #print (addresses)
 
-    print ('Hit: {}, Miss: {}  Rate: {:.2f}%'.format(hit, miss, 100.0*hit/(hit+miss)))
-            
+    print ('Predict Hit: {}, Predict Miss: {}  Predict Hit Rate: {:.2f}%'.format(predict_cache.hit, predict_cache.miss, 100.0*predict_cache.hit/(predict_cache.hit+predict_cache.miss)))
+    print ('Access Hit: {}, Access Miss: {}, Access Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)))                
+        
             # pass addresses to the prefetcher
             # check if current addr hits on a prefetch
     return
