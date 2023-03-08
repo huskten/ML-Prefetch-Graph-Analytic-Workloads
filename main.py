@@ -171,11 +171,11 @@ def build_and_train_network(benchmark, args):
         for row in readCSV:
             # row = row[0].split(',')
             pc, page, offset = int(row[0], 16), int(row[1], 16)>>12, (int(row[1], 16)>>6)&0x3f
-            print('Testing data input shapes and values... 2/14')
-            print(pc)
-            print(page)
-            print(offset)
-            print('End of testing 2/14')
+            #print('Testing data input shapes and values... 2/14')
+            #print(pc)
+            #print(page)
+            #print(offset)
+            #print('End of testing 2/14')
             if pc not in unique_pcs:
                 unique_pcs[pc] = len(unique_pcs)
             if page not in unique_pages:
@@ -404,7 +404,31 @@ def run_prefetcher(args):
             # check if current addr hits on a prefetch
     return
 
+"""
+Split csv files into multiple versions 2/28
+"""
 
+def split_data(filename, args):
+    segment = 0
+    segment_size = 50000000
+    counter = 0
+    global model_segment
+    model_segment = 0
+    with open (filename, 'r') as f:
+        outfile = open(str(filename)+"_segment"+str(segment)+".csv", 'w')
+        for line in f:
+            if counter == segment_size:
+                counter = 0
+                segment += 1
+                outfile = open(str(filename)+"_segment"+str(segment)+".csv", 'w')
+            outfile.write(line)
+            counter += 1
+
+    for i in range(4):
+        name = str(filename)+"_segment"+str(i)+".csv"
+        open(name)
+        build_and_train_network(name, args)
+        model_segment += 1
 
 
 
@@ -428,7 +452,8 @@ def main():
     args = parser.parse_args()
 
     if (not args.predict):
-        build_and_train_network(args.benchmark, args)
+        #build_and_train_network(args.benchmark, args)
+        split_data(args.benchmark, args)
     else:
         run_prefetcher(args)
 
