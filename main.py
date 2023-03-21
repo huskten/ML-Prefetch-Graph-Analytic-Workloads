@@ -2,7 +2,7 @@ import sys
 import os
 import argparse
 from collections import Counter
-from datetime import datetime
+import time
 import random
 import csv
 import numpy as np
@@ -49,15 +49,17 @@ class Cache:
         self.time = 0
         self.hit = 0
         self.miss = 0
+        self.no_access = 0
 
     def access(self, key):
-        key>>6
+        key = key>>6
         self.time +=  1
         if key in self.cache:
             ind = self.cache.index(key)
             self.LRU_Counter[ind] = self.time
             self.hit += 1
-            
+        elif key == 0:
+            self.no_access += 1
         else:
             self.miss += 1
             if None not in self.cache:
@@ -161,6 +163,7 @@ def get_output_pc_localization(pc_in, page_in, offset_in):
 def build_and_train_network(benchmark, args):
     directory = benchmark
 
+    start_time = time.time()
     unique_pcs = {} #{'oov': 0}
     unique_pages = {} #{'oov': 0}
     pc_in = []
@@ -299,7 +302,7 @@ def build_and_train_network(benchmark, args):
     steps_per_epoch = x.num_batches
     m.fit(x, epochs=epoch, batch_size=batch_size, validation_data=val_x, verbose=1, steps_per_epoch=steps_per_epoch)
     
-    m.save(os.path.join(args.model_path,'model.h5'))
+    m.save(os.path.join(args.model_path,str(benchmark[:-4])+'_model_'+str(model_segment)+'.h5'))
 
     with open(os.path.join(args.model_path,'pcs.json'), 'w') as f:
         pcs = json.dumps(unique_pcs)
@@ -311,9 +314,17 @@ def build_and_train_network(benchmark, args):
         f.write(pages)
         f.write('\n')
 
+    end_time = time.time()
+
+    elapsed_time = end_time - start_time
+    with open("time.txt", "a") as f:
+        print(str(benchmark[:-4])+'_model_'+str(model_segment)+" TIME ELAPSED TO TRAIN: "+str(elapsed_time), file = f)
 
 def get_all_data(args):
-    m = tf.keras.models.load_model(os.path.join(args.model_path,'model.h5'))
+    #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment0_model_0.h5'))
+    #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment1_model_1.h5'))
+    m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment2_model_2.h5'))
+    #m = tf.keras.models.load_model(os.path.join(args.model_path,'traces/short_segment3_model_0.h5'))
 
     unique_pcs = {}
     unique_pages = {}
@@ -339,8 +350,8 @@ def run_prefetcher(args):
     inv_unique_pages = {v: k for k, v in unique_pages.items()}
 
     print('Running prefetcher...')
-    predict_cache = Cache(100)
-    access_cache = Cache(100)
+    predict_cache = Cache(int(2.1e+6))
+    access_cache = Cache(int(2.1e+6))
     with open(args.benchmark) as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
         for row in readCSV:
@@ -355,46 +366,61 @@ def run_prefetcher(args):
             
             if pc in unique_pcs:
                 pc = unique_pcs[pc]
-            # else: pc = 0
+            else: pc = 0
 
             if page in unique_pages:
                 page = unique_pages[page]
-            # else: page = 0
+            else: page = 0
 
             x = { 'pc_in': np.array([pc]), 'page_in': np.array([page]), 'offset_in': np.array([offset]) }
             # print(x)
             # exit()
             y = m(x,training=False)
             res1 = np.argmax(y[0], axis=2)
-            page = [inv_unique_pages[i] for i in res1[0]]
+            if page in res1:
+                page = [inv_unique_pages[i] for i in res1[0]]
+            else:
+                page = [0]
             res2 = np.argmax(y[1], axis=2)
-            offset = [i for i in res2[0]]
-
+            if offset in res2:
+                offset = [i for i in res2[0]]
+            else:
+                offset = [0]
 
             for p,o in zip(page,offset):
                 tmp = ((p<<12) + (o<<6)) #actual prediction
 
                 predict_cache.access(tmp)
 
-                access_cache.access(addr)
+            access_cache.access(addr)
                 
 
-            if (predict_cache.hit+predict_cache.miss) % 100 == 0:
-                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(predict_cache.hit, predict_cache.miss, 100*predict_cache.hit/(predict_cache.hit+predict_cache.miss)))
-                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)))                
+            if (predict_cache.hit+predict_cache.miss+predict_cache.no_access) % 100 == 0:
+                print(str(args.benchmark)+' Predict Cache:')
+                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(predict_cache.hit, predict_cache.miss, 100.0*predict_cache.hit/(predict_cache.hit+predict_cache.miss)))
+                #print(predict_cache.cache[:100])
+                print(str(args.benchmark)+' Access Cache:')
+                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)), "\n")                
+                #print(access_cache.cache[:100])
                 # print(predict_LRU)
                 # print(predict_cache)
                 # print(access_LRU)
                 # print(access_cache)
-                with open("predict_output.txt", "a") as f:
-                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(predict_cache.hit, predict_cache.miss, 100*predict_cache.hit/(predict_cache.hit+predict_cache.miss)), file = f)
-                    print("predict_LRU: ", predict_cache.LRU_Counter, file = f)
-                    print("predict_cache: ", predict_cache.cache, file = f)
-                with open("access_output.txt", "a") as f1:
-                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)), file = f1)
-                    print("access_LRU: ", access_cache.LRU_Counter, file = f1)
-                    print("access_cache: ", access_cache.cache, file = f1)
 
+            if (predict_cache.hit+predict_cache.miss+predict_cache.no_access) % 10000000 == 0:
+                with open(str(args.benchmark)+" predict_caches_output.txt", "a") as fp:
+                    print(" predict_LRU: ", predict_cache.LRU_Counter, file = fp)
+                    print(" predict_cache: ", predict_cache.cache, file = fp)
+                with open(str(args.benchmark)+" access_caches_output.txt", "a") as fa:
+                    print(" access_LRU: ", access_cache.LRU_Counter, file = fa)
+                    print(" access_cache: ", access_cache.cache, file = fa)
+
+                with open(str(args.benchmark)+" predict_output.txt", "a") as f:
+                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(predict_cache.hit, predict_cache.miss, 100*predict_cache.hit/(predict_cache.hit+predict_cache.miss)), file = f)
+                    
+                with open(str(args.benchmark)+" access_output.txt", "a") as f1:
+                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)), file = f1)
+                    
             #print (addresses)
 
     print ('Predict Hit: {}, Predict Miss: {}  Predict Hit Rate: {:.2f}%'.format(predict_cache.hit, predict_cache.miss, 100.0*predict_cache.hit/(predict_cache.hit+predict_cache.miss)))
@@ -415,17 +441,20 @@ def split_data(filename, args):
     global model_segment
     model_segment = 0
     with open (filename, 'r') as f:
-        outfile = open(str(filename)+"_segment"+str(segment)+".csv", 'w')
+        outfile = open(str(filename[:-4])+"_segment"+str(segment)+".csv", 'w')
         for line in f:
             if counter == segment_size:
                 counter = 0
                 segment += 1
-                outfile = open(str(filename)+"_segment"+str(segment)+".csv", 'w')
+                outfile = open(str(filename[:-4])+"_segment"+str(segment)+".csv", 'w')
             outfile.write(line)
             counter += 1
+#    split_train(filename)
 
+#def split_train(filename, args):
     for i in range(4):
-        name = str(filename)+"_segment"+str(i)+".csv"
+        name = str(filename[:-4])+"_segment"+str(i)+".csv"
+        print(name)
         open(name)
         build_and_train_network(name, args)
         model_segment += 1
@@ -446,7 +475,7 @@ def main():
     parser.add_argument("--lstm_layers", help="lstm layers", type=int, default=1)
     parser.add_argument("--keep_ratio", help="keep ratio", type=float, default=0.8)
     parser.add_argument("--learning_rate", help="learning rate", type=float, default=0.001)
-    parser.add_argument("--batch_size", help="batch size", type=int, default=512)
+    parser.add_argument("--batch_size", help="batch size", type=int, default=500)
     parser.add_argument("--pc_localization", help="pc localization or global", type=int, default=1)
 
     args = parser.parse_args()
