@@ -26,11 +26,11 @@ multilabel = True
 
 
 """
-Added 2/21 Crude predict_cache
+Added 2/21 Crude main_cache
 """
-# # predict_cache_size = int(sys.argv[4], 16)
+# # main_cache_size = int(sys.argv[4], 16)
 # cache_size = 100
-# predict_cache = [None]*cache_size
+# main_cache = [None]*cache_size
 # predict_LRU = [0]*cache_size
 
 # cache_size = 100
@@ -50,6 +50,26 @@ class Cache:
         self.hit = 0
         self.miss = 0
         self.no_access = 0
+
+    def add(self, key):
+        key = key>>6
+        self.time +=  1
+        if key in self.cache:
+            ind = self.cache.index(key)
+            self.LRU_Counter[ind] = self.time
+        elif key == 0:
+            self.no_access += 1
+        else:
+            if None not in self.cache:
+                min_ind = self.LRU_Counter.index(min(self.LRU_Counter))
+                self.cache[min_ind] = key
+                self.LRU_Counter[min_ind] = self.time
+                
+                # print(min_ind)
+            else:
+                self.cache[self.cache.index(None)] = key
+                ind = self.cache.index(key)
+                self.LRU_Counter[ind] = self.time
 
     def access(self, key):
         key = key>>6
@@ -350,7 +370,7 @@ def run_prefetcher(args):
     inv_unique_pages = {v: k for k, v in unique_pages.items()}
 
     print('Running prefetcher...')
-    predict_cache = Cache(int(2.1e+6))
+    main_cache = Cache(int(2.1e+6))
     access_cache = Cache(int(2.1e+6))
     with open(args.benchmark) as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
@@ -390,40 +410,47 @@ def run_prefetcher(args):
             for p,o in zip(page,offset):
                 tmp = ((p<<12) + (o<<6)) #actual prediction
 
-                predict_cache.access(tmp)
+                main_cache.add(tmp)
+
+            # 3/23 Added main_cache to calculate effectiveness of prefetching
+
+            if addr in main_cache.cache():
+                main_cache.hit += 1
+            else:
+                main_cache.miss += 1
 
             access_cache.access(addr)
                 
 
-            if (predict_cache.hit+predict_cache.miss+predict_cache.no_access) % 100 == 0:
+            if (main_cache.hit+main_cache.miss+main_cache.no_access) % 100 == 0:
                 print(str(args.benchmark)+' Predict Cache:')
-                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(predict_cache.hit, predict_cache.miss, 100.0*predict_cache.hit/(predict_cache.hit+predict_cache.miss)))
-                #print(predict_cache.cache[:100])
+                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(main_cache.hit, main_cache.miss, 100.0*main_cache.hit/(main_cache.hit+main_cache.miss)))
+                #print(main_cache.cache[:100])
                 print(str(args.benchmark)+' Access Cache:')
                 print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)), "\n")                
                 #print(access_cache.cache[:100])
                 # print(predict_LRU)
-                # print(predict_cache)
+                # print(main_cache)
                 # print(access_LRU)
                 # print(access_cache)
 
-            if (predict_cache.hit+predict_cache.miss+predict_cache.no_access) % 10000000 == 0:
-                with open(str(args.benchmark)+" predict_caches_output.txt", "a") as fp:
-                    print(" predict_LRU: ", predict_cache.LRU_Counter, file = fp)
-                    print(" predict_cache: ", predict_cache.cache, file = fp)
+            if (main_cache.hit+main_cache.miss+main_cache.no_access) % 10000000 == 0:
+                with open(str(args.benchmark)+" main_caches_output.txt", "a") as fp:
+                    print(" predict_LRU: ", main_cache.LRU_Counter, file = fp)
+                    print(" main_cache: ", main_cache.cache, file = fp)
                 with open(str(args.benchmark)+" access_caches_output.txt", "a") as fa:
                     print(" access_LRU: ", access_cache.LRU_Counter, file = fa)
                     print(" access_cache: ", access_cache.cache, file = fa)
 
                 with open(str(args.benchmark)+" predict_output.txt", "a") as f:
-                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(predict_cache.hit, predict_cache.miss, 100*predict_cache.hit/(predict_cache.hit+predict_cache.miss)), file = f)
+                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(main_cache.hit, main_cache.miss, 100*main_cache.hit/(main_cache.hit+main_cache.miss)), file = f)
                     
                 with open(str(args.benchmark)+" access_output.txt", "a") as f1:
                     print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)), file = f1)
                     
             #print (addresses)
 
-    print ('Predict Hit: {}, Predict Miss: {}  Predict Hit Rate: {:.2f}%'.format(predict_cache.hit, predict_cache.miss, 100.0*predict_cache.hit/(predict_cache.hit+predict_cache.miss)))
+    print ('Predict Hit: {}, Predict Miss: {}  Predict Hit Rate: {:.2f}%'.format(main_cache.hit, main_cache.miss, 100.0*main_cache.hit/(main_cache.hit+main_cache.miss)))
     print ('Access Hit: {}, Access Miss: {}, Access Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)))                
         
             # pass addresses to the prefetcher
