@@ -97,3 +97,17 @@ D) Make poster and write-up final report.
 Worked on simple cache and implemented into main
 There is now a cache of predicted values that the prefetcher checks with and a cache of accesses to measure accuracy of the prefetcher
 All changes have been comitted to main
+
+3/7 - 3/16: Somehow all of my progress that I wrote into this file didn't save for the last two weeks 
+so I will be recalling what I have been doing over this time period by memory.
+
+From 3/7 to 3/9, I spent time reviewing papers and previous repositories as I waited for the models to finish training.
+
+From 3/14 to 3/16, wrote in accurate parameters of the prefetcher to be accurate to the Voyager paper. Fixed a few errors with embedding and
+keys. Basically just set the addresses that don't exist in the model's database to 0 and don't use it to call for a prefetch.
+
+3/21: Reviewed prefetcher performance, it was weirdly good. Dr. Tuck pointed out the flawed design of the data collection since the predict cache
+only compared prefecthed values to each other instead of comparing incoming addresses to prefetched addresses. Fixed this issue.
+
+3/23: Seems to be an issue with the prefetch output of model 0 since it's only giving one to two digit numbers. The other two models does not suffer 
+from this problem as much.
