@@ -322,7 +322,8 @@ def build_and_train_network(benchmark, args):
     steps_per_epoch = x.num_batches
     m.fit(x, epochs=epoch, batch_size=batch_size, validation_data=val_x, verbose=1, steps_per_epoch=steps_per_epoch)
     
-    m.save(os.path.join(args.model_path,str(benchmark[:-4])+'_model_'+str(model_segment)+'.h5'))
+    #m.save(os.path.join(args.model_path,str(benchmark[:-4])+'_model_'+str(model_segment)+'.h5'))
+    m.save(os.path.join(args.model_path,str(benchmark[:-4])+'_retrained_model_'+'01'+'.h5'))
 
     with open(os.path.join(args.model_path,'pcs.json'), 'w') as f:
         pcs = json.dumps(unique_pcs)
@@ -338,12 +339,13 @@ def build_and_train_network(benchmark, args):
 
     elapsed_time = end_time - start_time
     with open("time.txt", "a") as f:
-        print(str(benchmark[:-4])+'_model_'+str(model_segment)+" TIME ELAPSED TO TRAIN: "+str(elapsed_time), file = f)
+        print(str(benchmark[:-4])+'_model_'+" TIME ELAPSED TO TRAIN: "+str(elapsed_time), file = f)
 
 def get_all_data(args):
     #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment0_model_0.h5'))
     #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment1_model_1.h5'))
     m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment2_model_2.h5'))
+    #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment0_retrained_model_0.h5'))
     #m = tf.keras.models.load_model(os.path.join(args.model_path,'traces/short_segment3_model_0.h5'))
 
     unique_pcs = {}
@@ -397,8 +399,9 @@ def run_prefetcher(args):
 
             x = { 'pc_in': np.array([pc]), 'page_in': np.array([page]), 'offset_in': np.array([offset]) }
             # print(x)
-            # exit()
             y = m(x,training=False)
+            #print(y)
+            #exit()
             res1 = np.argmax(y[0], axis=2)
             if page in res1:
                 page = [inv_unique_pages[i] for i in res1[0]]
@@ -412,12 +415,7 @@ def run_prefetcher(args):
                 offset = [i for i in res2[0]]
             else:
                 offset = [0]
-           
-            #offset = [i for i in res2[0]]
-            
-           
-            #offset = [i for i in res2[0]]
-
+                
             for p,o in zip(page,offset):
                 tmp = ((p<<12) + (o<<6)) #actual prediction
                 #print("TESTING:   \n\n\n")
@@ -427,6 +425,11 @@ def run_prefetcher(args):
 
                 main_cache.add(tmp)
 
+            if tmp != 0:
+                with open(str(args.benchmark[:4])+"_prefetch_stream.txt", "a") as f2:
+                    print (str(tmp), file = f2)
+
+
             # 3/23 Added main_cache to calculate effectiveness of prefetching
 
             if addr>>6 in main_cache.cache:
@@ -434,16 +437,17 @@ def run_prefetcher(args):
             else:
                 main_cache.miss += 1
 
-            access_cache.access(addr)
-                
+            access_cache.access(addr) 
+   
 
             if (main_cache.hit+main_cache.miss+main_cache.no_access) % 100 == 0:
                 print(str(args.benchmark)+' Main Cache:')
                 print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(main_cache.hit, main_cache.miss, 100.0*main_cache.hit/(main_cache.hit+main_cache.miss)))
-                #print(main_cache.cache[:100])
+                print(main_cache.cache[:100])
                 print(str(args.benchmark)+' Access Cache:')
-                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)), "\n")                
-                #print(access_cache.cache[:100])
+                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)))                
+                print(access_cache.cache[:100])
+                print("\n")
                 # print(predict_LRU)
                 # print(main_cache)
                 # print(access_LRU)
@@ -462,8 +466,8 @@ def run_prefetcher(args):
                     
                 with open(str(args.benchmark)+" access_output.txt", "a") as f1:
                     print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)), file = f1)
-                    
-            #print (addresses)
+            
+                        #print (addresses)
 
     print ('Main Hit: {}, Main Miss: {}  Main Hit Rate: {:.2f}%'.format(main_cache.hit, main_cache.miss, 100.0*main_cache.hit/(main_cache.hit+main_cache.miss)))
     print ('Access Hit: {}, Access Miss: {}, Access Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)))                
@@ -523,8 +527,8 @@ def main():
     args = parser.parse_args()
 
     if (not args.predict):
-        #build_and_train_network(args.benchmark, args)
-        split_data(args.benchmark, args)
+        build_and_train_network(args.benchmark, args)
+        #split_data(args.benchmark, args)
     else:
         run_prefetcher(args)
 
