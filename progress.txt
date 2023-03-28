@@ -111,3 +111,10 @@ only compared prefecthed values to each other instead of comparing incoming addr
 
 3/23: Seems to be an issue with the prefetch output of model 0 since it's only giving one to two digit numbers. The other two models does not suffer 
 from this problem as much.
+
+3/28
+Started training model, figured out root of embed and key issues: I haven't been saving the dictionaries of each individual model to separate files 
+so models 0 and 1 were missing their dictionaries. Training on segment 1 to prefetch segement 2 with saved dictionaries. Found that access cache on 
+bfs achieve high access rates, changing to pagerank: plan to train on a pagerank trace to prefetch since bfs has good cache performance, skewing the
+prefetcher/access stream.
+

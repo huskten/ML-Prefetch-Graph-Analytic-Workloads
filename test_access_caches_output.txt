@@ -1,0 +1,6 @@
+Access Hit: 99028, Access Miss: 972, Access Hit Rate: 99.03%
+Access Hit: 198997, Access Miss: 1003, Access Hit Rate: 99.50%
+Access Hit: 298996, Access Miss: 1004, Access Hit Rate: 99.67%
+Access Hit: 398996, Access Miss: 1004, Access Hit Rate: 99.75%
+Access Hit: 498995, Access Miss: 1005, Access Hit Rate: 99.80%
+Access Hit: 598991, Access Miss: 1009, Access Hit Rate: 99.83%

@@ -325,11 +325,11 @@ def build_and_train_network(benchmark, args):
     #m.save(os.path.join(args.model_path,str(benchmark[:-4])+'_model_'+str(model_segment)+'.h5'))
     m.save(os.path.join(args.model_path,str(benchmark[:-4])+'_retrained_model_'+'01'+'.h5'))
 
-    with open(os.path.join(args.model_path,'pcs.json'), 'w') as f:
+    with open(os.path.join(args.model_path,str(args.benchmark[:-4])+'pcs.json'), 'w') as f:
         pcs = json.dumps(unique_pcs)
         f.write(pcs)
         f.write('\n')        
-    with open(os.path.join(args.model_path,'pages.json'), 'w') as f:
+    with open(os.path.join(args.model_path,str(args.benchmark[:-4])+'pages.json'), 'w') as f:
         pages = json.dumps(unique_pages)
         print (unique_pages)
         f.write(pages)
@@ -344,8 +344,8 @@ def build_and_train_network(benchmark, args):
 def get_all_data(args):
     #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment0_model_0.h5'))
     #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment1_model_1.h5'))
-    m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment2_model_2.h5'))
-    #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment0_retrained_model_0.h5'))
+    #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment2_model_2.h5'))
+    m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment0_retrained_model_0.h5'))
     #m = tf.keras.models.load_model(os.path.join(args.model_path,'traces/short_segment3_model_0.h5'))
 
     unique_pcs = {}
@@ -375,6 +375,10 @@ def run_prefetcher(args):
     print('Running prefetcher...')
     main_cache = Cache(int(2.1e+6))
     access_cache = Cache(int(2.1e+6))
+    new_pc = 0
+    old_pc = 0
+    new_page = 0
+    old_page = 0
     with open(args.benchmark) as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
         for row in readCSV:
@@ -389,32 +393,37 @@ def run_prefetcher(args):
             
             if pc in unique_pcs:
                 pc = unique_pcs[pc]
+                old_pc += 1
             else: 
                 pc = 0
+                new_pc += 1
 
             if page in unique_pages:
                 page = unique_pages[page]
+                old_page += 1
             else: 
                 page = 0
+                new_page += 1
 
             x = { 'pc_in': np.array([pc]), 'page_in': np.array([page]), 'offset_in': np.array([offset]) }
+            # 3/28 How do we compare these above numbers to the loaded address into the cache
             # print(x)
             y = m(x,training=False)
             #print(y)
             #exit()
             res1 = np.argmax(y[0], axis=2)
-            if page in res1:
-                page = [inv_unique_pages[i] for i in res1[0]]
-            else:
-                page = [0]
+            #if page in res1:
+            page = [inv_unique_pages[i] for i in res1[0]]
+            #else:
+            #    page = [0]
             
             #page = [inv_unique_pages[i] for i in res1[0]]
             
             res2 = np.argmax(y[1], axis=2)
-            if offset in res2:
-                offset = [i for i in res2[0]]
-            else:
-                offset = [0]
+            #if offset in res2:
+            offset = [i for i in res2[0]]
+            #else:
+            #    offset = [0]
                 
             for p,o in zip(page,offset):
                 tmp = ((p<<12) + (o<<6)) #actual prediction
@@ -438,15 +447,18 @@ def run_prefetcher(args):
                 main_cache.miss += 1
 
             access_cache.access(addr) 
-   
+            
+            
 
             if (main_cache.hit+main_cache.miss+main_cache.no_access) % 100 == 0:
                 print(str(args.benchmark)+' Main Cache:')
                 print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(main_cache.hit, main_cache.miss, 100.0*main_cache.hit/(main_cache.hit+main_cache.miss)))
                 print(main_cache.cache[:100])
                 print(str(args.benchmark)+' Access Cache:')
-                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)))                
-                print(access_cache.cache[:100])
+                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100.0*access_cache.hit/(access_cache.hit+access_cache.miss)))                
+                print(access_cache.cache[:100],"\n")
+                print("Old PC: ", old_pc, " New PC: ", new_pc)
+                print("Old Page: ", old_page, " New Page ", new_page)
                 print("\n")
                 # print(predict_LRU)
                 # print(main_cache)
@@ -462,15 +474,15 @@ def run_prefetcher(args):
                     print(" access_cache: ", access_cache.cache, file = fa)
 
                 with open(str(args.benchmark)+" main_output.txt", "a") as f:
-                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(main_cache.hit, main_cache.miss, 100*main_cache.hit/(main_cache.hit+main_cache.miss)), file = f)
+                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(main_cache.hit, main_cache.miss, 100.0*main_cache.hit/(main_cache.hit+main_cache.miss)), file = f)
                     
                 with open(str(args.benchmark)+" access_output.txt", "a") as f1:
-                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)), file = f1)
+                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100.0*access_cache.hit/(access_cache.hit+access_cache.miss)), file = f1)
             
                         #print (addresses)
 
     print ('Main Hit: {}, Main Miss: {}  Main Hit Rate: {:.2f}%'.format(main_cache.hit, main_cache.miss, 100.0*main_cache.hit/(main_cache.hit+main_cache.miss)))
-    print ('Access Hit: {}, Access Miss: {}, Access Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)))                
+    print ('Access Hit: {}, Access Miss: {}, Access Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100.0*access_cache.hit/(access_cache.hit+access_cache.miss)))                
         
             # pass addresses to the prefetcher
             # check if current addr hits on a prefetch
