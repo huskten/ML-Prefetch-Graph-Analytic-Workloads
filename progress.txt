@@ -118,3 +118,6 @@ so models 0 and 1 were missing their dictionaries. Training on segment 1 to pref
 bfs achieve high access rates, changing to pagerank: plan to train on a pagerank trace to prefetch since bfs has good cache performance, skewing the
 prefetcher/access stream.
 
+3/30
+Did code revisions yesterday and started training on page rank traces to prefetch. Stopped previous page rank training since they are different workloads and "it doesn't make sense to use a model trained on different workloads to prefetch" - Dr. Tuck. Now I am waiting on the page rank and realsegment1 prefetch to finish. Weights are working now.
+
