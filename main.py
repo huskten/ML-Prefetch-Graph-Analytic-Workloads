@@ -323,13 +323,13 @@ def build_and_train_network(benchmark, args):
     m.fit(x, epochs=epoch, batch_size=batch_size, validation_data=val_x, verbose=1, steps_per_epoch=steps_per_epoch)
     
     #m.save(os.path.join(args.model_path,str(benchmark[:-4])+'_model_'+str(model_segment)+'.h5'))
-    m.save(os.path.join(args.model_path,str(benchmark[:-4])+'_retrained_model_'+'01'+'.h5'))
+    m.save(os.path.join(args.model_path,str(benchmark[:-4])+'.h5'))
 
-    with open(os.path.join(args.model_path,str(args.benchmark[:-4])+'pcs.json'), 'w') as f:
+    with open(os.path.join(args.model_path,str(args.benchmark[:-4])+'_pcs.json'), 'w') as f:
         pcs = json.dumps(unique_pcs)
         f.write(pcs)
         f.write('\n')        
-    with open(os.path.join(args.model_path,str(args.benchmark[:-4])+'pages.json'), 'w') as f:
+    with open(os.path.join(args.model_path,str(args.benchmark[:-4])+'_pages.json'), 'w') as f:
         pages = json.dumps(unique_pages)
         print (unique_pages)
         f.write(pages)
@@ -345,17 +345,19 @@ def get_all_data(args):
     #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment0_model_0.h5'))
     #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment1_model_1.h5'))
     #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment2_model_2.h5'))
-    m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment0_retrained_model_0.h5'))
+    #m = tf.keras.models.load_model(os.path.join(args.model_path,'realtrace_segment0_retrained_model_0.h5'))
     #m = tf.keras.models.load_model(os.path.join(args.model_path,'traces/short_segment3_model_0.h5'))
+    m = tf.keras.models.load_model(os.path.join(args.model_path,args.model))
+    
 
     unique_pcs = {}
     unique_pages = {}
     
-    with open(os.path.join(args.model_path,'pcs.json'), 'r') as f:
+    with open(os.path.join(args.model_path,str(args.model[:-3])+'_pcs.json'), 'r') as f:
         unique_pcs = json.load(f)
         unique_pcs = {int(k):v for k,v in unique_pcs.items()}
     
-    with open(os.path.join(args.model_path,'pages.json'), 'r') as f:
+    with open(os.path.join(args.model_path,str(args.model[:-3])+'_pages.json'), 'r') as f:
         unique_pages = json.load(f)
         unique_pages = {int(k):v for k,v in unique_pages.items()}
 
@@ -453,12 +455,12 @@ def run_prefetcher(args):
             if (main_cache.hit+main_cache.miss+main_cache.no_access) % 100 == 0:
                 print(str(args.benchmark)+' Main Cache:')
                 print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(main_cache.hit, main_cache.miss, 100.0*main_cache.hit/(main_cache.hit+main_cache.miss)))
-                print(main_cache.cache[:100])
+                #print(main_cache.cache[:100])
                 print(str(args.benchmark)+' Access Cache:')
                 print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100.0*access_cache.hit/(access_cache.hit+access_cache.miss)))                
-                print(access_cache.cache[:100],"\n")
-                print("Old PC: ", old_pc, " New PC: ", new_pc)
-                print("Old Page: ", old_page, " New Page ", new_page)
+                #print(access_cache.cache[:100],"\n")
+                #print("Old PC: ", old_pc, " New PC: ", new_pc)
+                #print("Old Page: ", old_page, " New Page ", new_page)
                 print("\n")
                 # print(predict_LRU)
                 # print(main_cache)
@@ -523,7 +525,8 @@ def split_data(filename, args):
 def main():
     parser = argparse.ArgumentParser(description='LSTM attention.')
     parser.add_argument('--predict',action='store_true', help='Use model to predict.')
-    parser.add_argument('--model_path',type=str, default='out', help='Model file.')
+    parser.add_argument('--model_path',type=str, default='out', help='Model location.')
+    parser.add_argument('--model',type=str, default='realtrace_segment1.h5', help='Model file.')
     parser.add_argument("--epochs", help="number of epochs", type=int, default=500)
     parser.add_argument("--benchmark", help="benchmark name", type=str, default="./traces/medium.txt")
     parser.add_argument("--page_embed_size", help="page embedding size", type=int, default=128)
