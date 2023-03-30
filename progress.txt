@@ -3,7 +3,15 @@ Starting to note my progress
 
 Finished first official benchmarks on set of prediction data.
 
-Compared prediction to a list of addresses, compared prediction adress to the next actual adress
+Compared prediction to a list of addresses, compared prediction adress to the next actual adress-- -- 
+Lam V. Nguyen
+Pronouns: (He/Him/His)
+Class of '23
+NORTH CAROLINA SCHOOL OF SCIENCE AND MATH
+Lam V. Nguyen
+Pronouns: (He/Him/His)
+Class of '23
+NORTH CAROLINA SCHOOL OF SCIENCE AND MATH
 
 
 //////////////NormModel/////////////////
@@ -119,5 +127,8 @@ bfs achieve high access rates, changing to pagerank: plan to train on a pagerank
 prefetcher/access stream.
 
 3/30
-Did code revisions yesterday and started training on page rank traces to prefetch. Stopped previous page rank training since they are different workloads and "it doesn't make sense to use a model trained on different workloads to prefetch" - Dr. Tuck. Now I am waiting on the page rank and realsegment1 prefetch to finish. Weights are working now.
+Did code revisions yesterday and started training on page rank traces to prefetch. Stopped previous page rank training since they are different 
+workloads and "it doesn't make sense to use a model trained on different workloads to prefetch" - Dr. Tuck. Now I am waiting on the page rank 
+and realsegment1 prefetch to finish. Weights are working now. Streamlined code so that it is easier to navigate the directory and add an argument to
+load specific models from terminal instead of hand writing the code.
 
