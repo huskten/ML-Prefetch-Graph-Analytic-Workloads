@@ -73,8 +73,9 @@ class StreamPrefetcher:
 
 prefetcher = StreamPrefetcher(pattern_length=3)
 cache = Cache(500)
+access_cache = Cache(500)
 
-with open('traces/short.csv') as csvfile:
+with open('traces/long.csv') as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
         for row in readCSV:
             # row = row[0].split(',')
@@ -82,7 +83,16 @@ with open('traces/short.csv') as csvfile:
             
             prefetcher.access(address)
             prefetcher.prefetch(cache, address)
+            access_cache.access(address)
+            if (cache.hit+cache.miss+cache.no_access) % 100 == 0:
+                with open("streamPrefetcher_output.txt", "a") as f:
+                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(cache.hit, cache.miss, 100*cache.hit/(cache.hit+cache.miss)), file = f)
+                                
+                with open("streamAccess_output.txt", "a") as f1:
+                    print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)), file = f1)
 
 print(cache.cache)
 print(cache.hit + cache.miss)
+
+
 print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(cache.hit, cache.miss, 100.0*cache.hit/(cache.hit+cache.miss)))
