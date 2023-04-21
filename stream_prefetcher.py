@@ -56,13 +56,17 @@ class Cache:
 
 class StreamPrefetcher:
     def __init__(self, pattern_length):
+        # how long of a pattern we want per prefetch
         self.pattern_length = pattern_length
         self.accesses = []
         
     def access(self, address):
+        # puts in infinite cache (not possible in real life to have an infinite cache)
         self.accesses.append(address)
         if len(self.accesses) >= self.pattern_length:
+            # if it reaches the pattern length, pattern is the last # of addresses
             pattern = self.accesses[-self.pattern_length:]
+            # if the addresses in the pattern are spaced out an even amount, it is a pattern to prefetch off of
             if all(pattern[i] + (pattern[i+1]-pattern[i])/2 == pattern[i+1] for i in range(len(pattern)-1)):
                 prefetch_address = pattern[-1] + (pattern[1] - pattern[0])
             
@@ -84,6 +88,8 @@ with open('traces/long.csv') as csvfile:
             prefetcher.access(address)
             prefetcher.prefetch(cache, address)
             access_cache.access(address)
+            
+            # print to record data
             if (cache.hit+cache.miss+cache.no_access) % 100 == 0:
                 with open("streamPrefetcher_output.txt", "a") as f:
                     print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(cache.hit, cache.miss, 100*cache.hit/(cache.hit+cache.miss)), file = f)
