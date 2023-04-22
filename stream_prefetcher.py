@@ -75,11 +75,11 @@ class StreamPrefetcher:
         cache.access(address)
         pass
 
-prefetcher = StreamPrefetcher(pattern_length=3)
-cache = Cache(500)
-access_cache = Cache(500)
+prefetcher = StreamPrefetcher(pattern_length=8)
+cache = Cache(int(2.1e+6))
+access_cache = Cache(int(2.1e+6))
 
-with open('traces/long.csv') as csvfile:
+with open('newtraces/pr.g19_segment2.csv') as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
         for row in readCSV:
             # row = row[0].split(',')
@@ -91,6 +91,8 @@ with open('traces/long.csv') as csvfile:
             
             # print to record data
             if (cache.hit+cache.miss+cache.no_access) % 100 == 0:
+                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(cache.hit, cache.miss, 100.0*cache.hit/(cache.hit+cache.miss)))
+                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100.0*access_cache.hit/(access_cache.hit+access_cache.miss)))
                 with open("streamPrefetcher_output.txt", "a") as f:
                     print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(cache.hit, cache.miss, 100*cache.hit/(cache.hit+cache.miss)), file = f)
                                 
