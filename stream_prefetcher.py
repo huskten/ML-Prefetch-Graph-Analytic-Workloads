@@ -56,24 +56,16 @@ class Cache:
 
 class StreamPrefetcher:
     def __init__(self, pattern_length):
-        # how long of a pattern we want per prefetch
         self.pattern_length = pattern_length
         self.accesses = []
-        
-    def access(self, address):
-        # puts in infinite cache (not possible in real life to have an infinite cache)
+
+    def load(self, address):
         self.accesses.append(address)
         if len(self.accesses) >= self.pattern_length:
-            # if it reaches the pattern length, pattern is the last # of addresses
             pattern = self.accesses[-self.pattern_length:]
-            # if the addresses in the pattern are spaced out an even amount, it is a pattern to prefetch off of
             if all(pattern[i] + (pattern[i+1]-pattern[i])/2 == pattern[i+1] for i in range(len(pattern)-1)):
                 prefetch_address = pattern[-1] + (pattern[1] - pattern[0])
-            
-
-    def prefetch(self, cache, address):
-        cache.access(address)
-        pass
+                cache.access(prefetch_address)
 
 prefetcher = StreamPrefetcher(pattern_length=8)
 cache = Cache(int(2.1e+6))
@@ -83,23 +75,28 @@ with open('newtraces/pr.g19_segment2.csv') as csvfile:
         readCSV = csv.reader(csvfile, delimiter=',')
         for row in readCSV:
             # row = row[0].split(',')
-            pc, address = int(row[0], 16), int(row[1], 16)
-            
-            prefetcher.access(address)
-            prefetcher.prefetch(cache, address)
+            pc, address = int(row[0], 16), (int(row[1], 16))
+            address = address>>6
+
+            if address in cache.cache:
+                cache.hit += 1
+            else:
+                cache.miss += 1
+
+            prefetcher.load(address)
+            #prefetcher.prefetch(cache, address)
             access_cache.access(address)
-            
-            # print to record data
-            if (cache.hit+cache.miss+cache.no_access) % 100 == 0:
+            if (cache.hit+cache.miss+cache.no_access) % 100000 == 0:
                 print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(cache.hit, cache.miss, 100.0*cache.hit/(cache.hit+cache.miss)))
-                print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100.0*access_cache.hit/(access_cache.hit+access_cache.miss)))
-                with open("streamPrefetcher_output.txt", "a") as f:
+               # print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(cache.hit, cache.miss, 100.0*cache.hit/(cache.hit+cache.miss)))
+                print(cache.cache[:10])
+                with open("out/streamPrefetcher_output.txt", "a") as f:
                     print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(cache.hit, cache.miss, 100*cache.hit/(cache.hit+cache.miss)), file = f)
-                                
-                with open("streamAccess_output.txt", "a") as f1:
+
+                with open("out/streamAccess_output.txt", "a") as f1:
                     print ('Hit: {}, Miss: {}, Hit Rate: {:.2f}%'.format(access_cache.hit, access_cache.miss, 100*access_cache.hit/(access_cache.hit+access_cache.miss)), file = f1)
 
-print(cache.cache)
+#print(cache.cache)
 print(cache.hit + cache.miss)
 
 
