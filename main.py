@@ -448,7 +448,11 @@ def run_prefetcher(args):
             else:
                 main_cache.miss += 1
 
-            access_cache.access(addr) 
+            access_cache.add(addr)
+            if addr>>6 in access_cache.cache:
+                access_cache.hit += 1
+            else:
+                access_cache.miss += 1
             
             
 
